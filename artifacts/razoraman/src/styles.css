@@ -1012,8 +1012,13 @@ button {
    Responsive — Mobile (≤768px)
    =========================== */
 @media (max-width: 768px) {
-  body {
-    overflow: hidden;
+  /* Restore natural document scrolling.
+     The sidebar is position:fixed so we don't need to lock the document height.
+     JS applies overflow:hidden to body only while the sidebar drawer is open. */
+  html, body {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .mobile-header {
@@ -1029,13 +1034,18 @@ button {
     pointer-events: auto;
   }
 
+  /* Override desktop height:100vh / overflow:hidden constraints */
   .layout {
-    height: calc(100vh - var(--mobile-header-height));
-    margin-top: var(--mobile-header-height);
+    height: auto;
+    overflow: visible;
+    padding-top: var(--mobile-header-height);
   }
 
   .content {
-    height: calc(100vh - var(--mobile-header-height));
+    height: auto;
+    min-height: calc(100vh - var(--mobile-header-height));
+    overflow-y: visible;
+    overflow-x: hidden;
   }
 
   .sidebar {

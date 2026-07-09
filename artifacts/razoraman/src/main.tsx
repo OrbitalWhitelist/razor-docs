@@ -96,6 +96,7 @@ function renderSidebar(data: ContentData): void {
     header.addEventListener('click', () => {
       if (!contentData) return;
       navigate(sectionKey, 0);
+      closeMobileSidebar(); // close drawer so overlay doesn't stay dark on mobile
     });
 
     // Articles list — uses CSS grid trick for smooth animation (no max-height snap)
