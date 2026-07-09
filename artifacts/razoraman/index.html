@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Razoraman — Roblox Security Guide</title>
+    <meta name="description" content="An independent community guide covering phishing awareness and account security for Roblox players." />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="Razoraman — Roblox Security Guide" />
+    <meta property="og:description" content="Learn how to protect your Roblox account from phishing, leaks, and unauthorized access." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Razoraman — Roblox Security Guide" />
+    <meta name="twitter:description" content="Learn how to protect your Roblox account from phishing, leaks, and unauthorized access." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <!-- Mobile top bar -->
+    <header class="mobile-header">
+      <button id="hamburger" class="hamburger-btn" aria-label="Toggle navigation">
+        <span class="hamburger-icon">
+          <span></span><span></span><span></span>
+        </span>
+      </button>
+      <div class="mobile-logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <span>Razoraman</span>
+      </div>
+    </header>
+
+    <!-- Mobile overlay -->
+    <div id="overlay" class="overlay"></div>
+
+    <div class="layout">
+      <!-- Sidebar -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-inner">
+          <div class="sidebar-logo">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+            <div class="logo-text">
+              <span class="logo-name">Razoraman</span>
+              <span class="logo-tagline">Security Guide</span>
+            </div>
+          </div>
+
+          <div class="sidebar-divider"></div>
+
+          <nav class="sidebar-nav" id="sidebar-nav">
+            <!-- Rendered by JS -->
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="content" id="content-main">
+        <div id="article-container" class="article-container">
+          <div id="loading-state" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading content…</p>
+          </div>
+          <article id="article-view" class="article-view hidden">
+            <div class="article-breadcrumb" id="article-breadcrumb"></div>
+            <h1 id="article-title" class="article-title"></h1>
+            <div id="article-body" class="article-body"></div>
+            <div class="article-nav-footer" id="article-nav-footer"></div>
+          </article>
+        </div>
+
+        <footer class="footer">
+          <div class="footer-inner">
+            <p>
+              <strong>Disclaimer:</strong> Razoraman is an independent community resource created to help players stay safe online.
+              This site is <strong>not affiliated with, endorsed by, or associated with Roblox Corporation</strong> in any way.
+              Roblox® is a registered trademark of Roblox Corporation.
+            </p>
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
