@@ -1,5 +1,5 @@
 // Razor Docs — Vanilla TypeScript docs app
-// No framework. All content is driven by /public/content.json.
+// No framework. All content driven by /public/content.json.
 
 interface Article {
   title: string;
@@ -19,46 +19,53 @@ interface RouteState {
   index: number;
 }
 
-const SECTIONS: Record<SectionKey, { label: string; icon: string }> = {
-  phishing: { label: 'Phishing Awareness', icon: '🎣' },
-  security: { label: 'Account Security', icon: '🔐' },
+// SVG icons — no emojis
+const ICON_PHISHING = `<svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M10 3v5.5"/>
+  <circle cx="10" cy="11" r="2.5"/>
+  <path d="M12.5 11c0 2.8 1.5 4.5 3 4.5"/>
+  <path d="M6 6.5C6 4.5 7.8 2.5 10 2.5"/>
+</svg>`;
+
+const ICON_SECURITY = `<svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M10 2l6 3v4.5c0 3.5-2.5 6.5-6 8-3.5-1.5-6-4.5-6-8V5l6-3z"/>
+  <path d="M7.5 10l2 2 3-3"/>
+</svg>`;
+
+const ICON_CHEVRON = `<svg class="nav-chevron-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M4 6l4 4 4-4"/>
+</svg>`;
+
+const SECTIONS: Record<SectionKey, { label: string; iconSvg: string }> = {
+  phishing: { label: 'Phishing Awareness', iconSvg: ICON_PHISHING },
+  security: { label: 'Account Security',   iconSvg: ICON_SECURITY },
 };
 
 let contentData: ContentData | null = null;
 
-// ─── DOM helpers ────────────────────────────────────────────────────────────
+// ─── DOM helpers ─────────────────────────────────────────────────────────────
 
 function el<T extends HTMLElement>(id: string): T {
-  const elem = document.getElementById(id);
-  if (!elem) throw new Error(`Element #${id} not found`);
-  return elem as T;
+  const e = document.getElementById(id);
+  if (!e) throw new Error(`#${id} not found`);
+  return e as T;
 }
 
-function qs<T extends Element>(selector: string, root: Element | Document = document): T | null {
-  return root.querySelector<T>(selector);
+function qsa<T extends Element>(sel: string, root: Element | Document = document): T[] {
+  return Array.from(root.querySelectorAll<T>(sel));
 }
 
-function qsa<T extends Element>(selector: string, root: Element | Document = document): T[] {
-  return Array.from(root.querySelectorAll<T>(selector));
-}
-
-// ─── Hash Routing ────────────────────────────────────────────────────────────
+// ─── Hash routing ─────────────────────────────────────────────────────────────
 
 function parseHash(): RouteState {
   const hash = window.location.hash.slice(1);
   if (!hash) return { section: 'phishing', index: 0 };
-
-  const parts = hash.split('-');
-  const section = parts[0] as SectionKey;
-  const index = parseInt(parts[1] ?? '0', 10);
-
-  if (!contentData || !(section in contentData)) {
-    return { section: 'phishing', index: 0 };
-  }
-
-  const articles = contentData[section];
-  const safeIndex = Number.isNaN(index) ? 0 : Math.max(0, Math.min(index, articles.length - 1));
-  return { section, index: safeIndex };
+  const [sectionRaw, indexRaw] = hash.split('-');
+  const section = sectionRaw as SectionKey;
+  const index   = parseInt(indexRaw ?? '0', 10);
+  if (!contentData || !(section in contentData)) return { section: 'phishing', index: 0 };
+  const safeIdx = Number.isNaN(index) ? 0 : Math.max(0, Math.min(index, contentData[section].length - 1));
+  return { section, index: safeIdx };
 }
 
 function buildHash(section: SectionKey, index: number): string {
@@ -69,54 +76,52 @@ function navigate(section: SectionKey, index: number): void {
   window.location.hash = buildHash(section, index);
 }
 
-// ─── Sidebar rendering ───────────────────────────────────────────────────────
+// ─── Sidebar rendering ────────────────────────────────────────────────────────
 
 function renderSidebar(data: ContentData): void {
   const nav = el('sidebar-nav');
   nav.innerHTML = '';
 
-  (Object.keys(SECTIONS) as SectionKey[]).forEach((sectionKey) => {
+  (Object.keys(SECTIONS) as SectionKey[]).forEach((sectionKey, sectionIdx) => {
     const articles = data[sectionKey];
-    const { label, icon } = SECTIONS[sectionKey];
+    const { label, iconSvg } = SECTIONS[sectionKey];
 
     const section = document.createElement('div');
     section.className = 'nav-section';
     section.dataset.section = sectionKey;
 
-    // Section header button
     const header = document.createElement('button');
     header.className = 'nav-section-header';
     header.dataset.section = sectionKey;
     header.setAttribute('aria-expanded', 'false');
+    header.style.animationDelay = `${sectionIdx * 60}ms`;
     header.innerHTML = `
-      <span class="nav-section-icon">${icon}</span>
+      <span class="nav-icon-wrap">${iconSvg}</span>
       <span class="nav-section-label">${label}</span>
-      <span class="nav-section-chevron">▼</span>
+      ${ICON_CHEVRON}
     `;
     header.addEventListener('click', () => {
       if (!contentData) return;
       navigate(sectionKey, 0);
-      closeMobileSidebar(); // close drawer so overlay doesn't stay dark on mobile
+      closeMobileSidebar();
     });
 
-    // Articles list — uses CSS grid trick for smooth animation (no max-height snap)
+    // CSS grid trick — smooth accordion without max-height snap
     const articleList = document.createElement('div');
     articleList.className = 'nav-articles';
     articleList.id = `nav-articles-${sectionKey}`;
-    articleList.setAttribute('aria-label', label);
 
-    // Inner wrapper required for grid-template-rows: 0fr animation
     const inner = document.createElement('div');
     inner.className = 'nav-articles-inner';
 
     articles.forEach((article, idx) => {
       const link = document.createElement('a');
-      link.href = buildHash(sectionKey, idx);
+      link.href     = buildHash(sectionKey, idx);
       link.className = 'nav-article-link';
       link.dataset.section = sectionKey;
-      link.dataset.index = String(idx);
-      link.textContent = article.title;
-      link.title = article.title; // tooltip for ellipsized text
+      link.dataset.index   = String(idx);
+      link.textContent     = article.title;
+      link.title           = article.title;
       link.addEventListener('click', (e) => {
         e.preventDefault();
         navigate(sectionKey, idx);
@@ -132,54 +137,46 @@ function renderSidebar(data: ContentData): void {
   });
 }
 
-// ─── Active state management ─────────────────────────────────────────────────
+// ─── Active state ─────────────────────────────────────────────────────────────
 
 function updateActiveStates(route: RouteState): void {
   const { section, index } = route;
 
   qsa<HTMLButtonElement>('.nav-section-header').forEach((btn) => {
-    const isActive = btn.dataset.section === section;
-    btn.classList.toggle('section-active', isActive);
-    btn.setAttribute('aria-expanded', String(isActive));
+    const active = btn.dataset.section === section;
+    btn.classList.toggle('section-active', active);
+    btn.setAttribute('aria-expanded', String(active));
   });
 
   qsa<HTMLDivElement>('.nav-articles').forEach((list) => {
-    const sectionKey = list.id.replace('nav-articles-', '');
-    list.classList.toggle('expanded', sectionKey === section);
+    list.classList.toggle('expanded', list.id === `nav-articles-${section}`);
   });
 
   qsa<HTMLAnchorElement>('.nav-article-link').forEach((link) => {
-    const isActive = link.dataset.section === section && Number(link.dataset.index) === index;
-    link.classList.toggle('active', isActive);
+    link.classList.toggle('active',
+      link.dataset.section === section && Number(link.dataset.index) === index);
   });
 }
 
-// ─── Article rendering ───────────────────────────────────────────────────────
+// ─── Article rendering ────────────────────────────────────────────────────────
 
 function renderArticle(route: RouteState): void {
   if (!contentData) return;
-
   const { section, index } = route;
-  const articles = contentData[section];
-  const article = articles[index];
+  const article = contentData[section][index];
   if (!article) return;
 
   const { label } = SECTIONS[section];
 
-  // Breadcrumb
-  const breadcrumb = el('article-breadcrumb');
-  breadcrumb.innerHTML = `
+  el('article-breadcrumb').innerHTML = `
     <span class="breadcrumb-section">${label}</span>
     <span class="breadcrumb-sep">›</span>
     <span>${article.title}</span>
   `;
 
-  // Title
   el('article-title').textContent = article.title;
 
-  // Body — rendered from {summary, example} fields
-  const body = el('article-body');
-  body.innerHTML = `
+  el('article-body').innerHTML = `
     <div class="content-card summary-card">
       <div class="card-label">Ringkasan</div>
       <p class="summary-text">${article.summary}</p>
@@ -190,129 +187,111 @@ function renderArticle(route: RouteState): void {
     </div>
   `;
 
-  // Prev / Next navigation
-  renderArticleNavFooter(section, index);
+  renderNavFooter(section, index);
 
-  // Show article, hide loading
   el('loading-state').style.display = 'none';
 
   const view = el('article-view');
   view.classList.remove('hidden');
-  // Trigger re-animation on every navigation
   view.style.animation = 'none';
-  void view.offsetWidth; // force reflow
+  void view.offsetWidth;
   view.style.animation = '';
 
-  // Scroll content area to top on navigation
+  window.scrollTo({ top: 0, behavior: 'instant' });
   el('content-main').scrollTo({ top: 0, behavior: 'instant' });
 }
 
-function renderArticleNavFooter(section: SectionKey, index: number): void {
-  if (!contentData) return;
+interface FlatArticle { section: SectionKey; index: number; title: string; }
 
+function getAllFlat(): FlatArticle[] {
+  if (!contentData) return [];
+  const out: FlatArticle[] = [];
+  (Object.keys(SECTIONS) as SectionKey[]).forEach((k) =>
+    contentData![k].forEach((a, i) => out.push({ section: k, index: i, title: a.title })));
+  return out;
+}
+
+function renderNavFooter(section: SectionKey, index: number): void {
+  if (!contentData) return;
   const footer = el('article-nav-footer');
   footer.innerHTML = '';
+  const all = getAllFlat();
+  const cur = all.findIndex((a) => a.section === section && a.index === index);
+  if (cur === -1) return;
 
-  const allArticles = getAllArticlesFlat();
-  const currentFlat = allArticles.findIndex((a) => a.section === section && a.index === index);
-
-  if (currentFlat === -1) return;
-
-  // Previous button
-  if (currentFlat > 0) {
-    const prev = allArticles[currentFlat - 1];
-    const btn = document.createElement('a');
-    btn.href = buildHash(prev.section, prev.index);
+  if (cur > 0) {
+    const prev = all[cur - 1];
+    const btn  = document.createElement('a');
+    btn.href      = buildHash(prev.section, prev.index);
     btn.className = 'nav-btn prev';
-    btn.innerHTML = `
-      <span class="nav-btn-arrow">←</span>
-      <span class="nav-btn-content">
-        <span class="nav-btn-label">Sebelumnya</span>
-        <span class="nav-btn-title">${prev.title}</span>
-      </span>
-    `;
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      navigate(prev.section, prev.index);
-    });
+    btn.innerHTML = `<span class="nav-btn-arrow">←</span><span class="nav-btn-content"><span class="nav-btn-label">Sebelumnya</span><span class="nav-btn-title">${prev.title}</span></span>`;
+    btn.addEventListener('click', (e) => { e.preventDefault(); navigate(prev.section, prev.index); });
     footer.appendChild(btn);
   } else {
-    const spacer = document.createElement('div');
-    footer.appendChild(spacer);
+    footer.appendChild(document.createElement('div'));
   }
 
-  // Next button
-  if (currentFlat < allArticles.length - 1) {
-    const next = allArticles[currentFlat + 1];
-    const btn = document.createElement('a');
-    btn.href = buildHash(next.section, next.index);
+  if (cur < all.length - 1) {
+    const next = all[cur + 1];
+    const btn  = document.createElement('a');
+    btn.href      = buildHash(next.section, next.index);
     btn.className = 'nav-btn next';
-    btn.innerHTML = `
-      <span class="nav-btn-content">
-        <span class="nav-btn-label">Berikutnya</span>
-        <span class="nav-btn-title">${next.title}</span>
-      </span>
-      <span class="nav-btn-arrow">→</span>
-    `;
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      navigate(next.section, next.index);
-    });
+    btn.innerHTML = `<span class="nav-btn-content"><span class="nav-btn-label">Berikutnya</span><span class="nav-btn-title">${next.title}</span></span><span class="nav-btn-arrow">→</span>`;
+    btn.addEventListener('click', (e) => { e.preventDefault(); navigate(next.section, next.index); });
     footer.appendChild(btn);
   }
 }
 
-interface FlatArticle {
-  section: SectionKey;
-  index: number;
-  title: string;
-}
-
-function getAllArticlesFlat(): FlatArticle[] {
-  if (!contentData) return [];
-  const result: FlatArticle[] = [];
-  (Object.keys(SECTIONS) as SectionKey[]).forEach((sectionKey) => {
-    contentData![sectionKey].forEach((article, idx) => {
-      result.push({ section: sectionKey, index: idx, title: article.title });
-    });
-  });
-  return result;
-}
-
-// ─── Mobile sidebar ──────────────────────────────────────────────────────────
+// ─── Mobile sidebar — overlay controlled by JS only ──────────────────────────
 
 function openMobileSidebar(): void {
-  el('sidebar').classList.add('open');
-  el('overlay').classList.add('visible');
+  const overlay = el('overlay');
+  const sidebar = el('sidebar');
+
+  // 1. Make overlay visible in DOM first (starts at opacity:0)
+  overlay.style.display = 'block';
+
+  // 2. Two rAF frames so the browser registers the display change before transitioning
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    sidebar.classList.add('open');
+    overlay.classList.add('visible');
+  }));
+
   document.body.style.overflow = 'hidden';
 }
 
 function closeMobileSidebar(): void {
-  el('sidebar').classList.remove('open');
-  el('overlay').classList.remove('visible');
+  const overlay = el('overlay');
+  const sidebar = el('sidebar');
+
+  sidebar.classList.remove('open');
+  overlay.classList.remove('visible');
   document.body.style.overflow = '';
+
+  // Hide overlay from DOM after fade-out completes — eliminates backdrop-filter bleed
+  overlay.addEventListener('transitionend', () => {
+    overlay.style.display = 'none';
+  }, { once: true });
 }
 
 function setupMobileMenu(): void {
+  // Close button inside sidebar
+  const closeBtn = document.getElementById('sidebar-close');
+  if (closeBtn) closeBtn.addEventListener('click', closeMobileSidebar);
+
   el('hamburger').addEventListener('click', () => {
-    const isOpen = el('sidebar').classList.contains('open');
-    if (isOpen) {
-      closeMobileSidebar();
-    } else {
-      openMobileSidebar();
-    }
+    el('sidebar').classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
   });
 
-  el('overlay').addEventListener('click', closeMobileSidebar);
+  // Use pointerdown for snappier response on mobile
+  el('overlay').addEventListener('pointerdown', closeMobileSidebar);
 
-  // Clear scroll-lock when viewport crosses the mobile breakpoint
-  let lastWasMobile = window.innerWidth <= 768;
+  // Clear scroll-lock on resize to desktop
+  let wasMobile = window.innerWidth <= 768;
   window.addEventListener('resize', () => {
     const isMobile = window.innerWidth <= 768;
-    if (lastWasMobile && !isMobile) {
-      closeMobileSidebar();
-    }
-    lastWasMobile = isMobile;
+    if (wasMobile && !isMobile) closeMobileSidebar();
+    wasMobile = isMobile;
   });
 }
 
@@ -329,24 +308,22 @@ function handleRoute(): void {
 async function init(): Promise<void> {
   setupMobileMenu();
 
-  const baseUrl = import.meta.env.BASE_URL;
-  const contentUrl = `${baseUrl}content.json`.replace('//', '/');
+  const base = import.meta.env.BASE_URL;
+  const url  = `${base}content.json`.replace('//', '/');
 
   let data: ContentData;
   try {
-    const res = await fetch(contentUrl);
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     data = await res.json() as ContentData;
   } catch (err) {
-    const loading = el('loading-state');
-    loading.innerHTML = `
-      <div style="color: var(--accent-red); font-size: 14px; text-align: center; padding: 24px;">
-        <div style="font-size: 36px; margin-bottom: 12px;">⚠️</div>
+    el('loading-state').innerHTML = `
+      <div style="text-align:center;padding:32px;color:var(--accent-red)">
+        <div style="font-size:36px;margin-bottom:12px">⚠️</div>
         <strong>Gagal memuat konten</strong><br>
-        <span style="color: var(--text-muted);">Tidak dapat mengambil content.json. Coba refresh halaman.</span>
-      </div>
-    `;
-    console.error('Failed to load content.json:', err);
+        <span style="color:var(--text-muted)">Coba refresh halaman.</span>
+      </div>`;
+    console.error('content.json load error:', err);
     return;
   }
 
@@ -355,10 +332,7 @@ async function init(): Promise<void> {
   handleRoute();
 
   window.addEventListener('hashchange', handleRoute);
-
-  if (!window.location.hash) {
-    window.history.replaceState(null, '', buildHash('phishing', 0));
-  }
+  if (!window.location.hash) window.history.replaceState(null, '', buildHash('phishing', 0));
 }
 
 init();
