@@ -1,0 +1,23 @@
+Build a modern documentation website called "Razor Docs" (rename from any previous "Razoraman" branding — update title, header logo text, and meta tags to "Razor Docs"). Deploy target: static site for Vercel (suggested repo/project name: razor-docs).
+Design direction — fluid & polished (reference: Nebula-style landing pages):
+Dark background (near-black, #0a0a0f range) with soft organic gradient blob shapes (purple → orange → blue) in the hero/background area, blurred and low-opacity so it doesn't distract from text
+Rounded corners (16-24px radius) on all cards, no sharp edges
+Smooth easing transitions (cubic-bezier, 300-400ms) on ALL interactive elements: sidebar links, tab switches, dropdown open/close, button hovers
+Generous padding/whitespace, never let content touch container edges
+CRITICAL bug fixes / UI requirements (must strictly enforce):
+NO element, card, dropdown, or sidebar item may overflow or bleed outside its parent container/frame under any screen size — use overflow: hidden + proper flex/grid containment and test at 320px, 768px, 1024px, 1440px widths
+Any truncated text MUST use proper CSS ellipsis (text-overflow: ellipsis; white-space: nowrap; overflow: hidden;) — never allow raw text to cut off mid-word showing broken fragments like "Con" without a proper "…" ellipsis character
+Dropdown/toggle menus must animate cleanly open/close (max-height or opacity+transform transition) — no flickering, no snapping to a broken/half-open visual state, no layout shift when toggled
+Sidebar and content panels must be independently scrollable if content overflows vertically, without breaking the outer page layout
+Layout: Left sidebar with 2 tabs: "Phishing Awareness" and "Account Security". Clicking switches content with smooth fade/slide transition, no page reload.
+Content architecture: All text stored in content.json as { title, summary, example } objects per category, so future edits only touch the JSON file, never the HTML/JS/CSS.
+Language: All content in Bahasa Indonesia, short (2-4 kalimat per poin) with concrete real-world examples.
+Content — Phishing Awareness tab:
+Cara cek domain aman: domain resmi HANYA roblox.com polos, tanpa tambahan apapun. Contoh domain phishing yang harus dicurigai: roblox.com.bz (nambah suffix setelah .com), roblox.zm (ganti TLD jadi negara asing), rob1ox.com (huruf diganti angka). Situs phishing sering meniru tampilan Private Server list, Profile User, atau halaman Group Roblox biar makin meyakinkan.
+Contoh skenario nyata: DM Discord nawarin jadi "game tester", atau email "akun kena laporan, verifikasi sekarang" yang bikin panik buru-buru klik.
+Data bocor = pintu masuk hacker bypass keamanan akun dalam hitungan detik.
+Tips: pasang Gmail di akun dari awal buat recovery, dan langsung hubungi Roblox Support resmi kalau udah kejadian.
+Content — Account Security tab:
+Sebelum kena hack: pasang email (Gmail), 2FA (Google Authenticator/Passkey), nomor HP, parental control.
+Simpan 10 recovery code di tempat aman offline (bukan screenshot di galeri HP).
+Footer: Disclaimer bahwa ini bukan situs resmi Roblox, cuma buat edukasi komunitas.

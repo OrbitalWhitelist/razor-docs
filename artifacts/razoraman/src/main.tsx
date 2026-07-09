@@ -1,9 +1,10 @@
-// Razoraman — Vanilla TypeScript docs app
+// Razor Docs — Vanilla TypeScript docs app
 // No framework. All content is driven by /public/content.json.
 
 interface Article {
   title: string;
-  body: string;
+  summary: string;
+  example: string;
 }
 
 interface ContentData {
@@ -82,7 +83,7 @@ function renderSidebar(data: ContentData): void {
     section.className = 'nav-section';
     section.dataset.section = sectionKey;
 
-    // Section header
+    // Section header button
     const header = document.createElement('button');
     header.className = 'nav-section-header';
     header.dataset.section = sectionKey;
@@ -97,10 +98,15 @@ function renderSidebar(data: ContentData): void {
       navigate(sectionKey, 0);
     });
 
-    // Articles list
+    // Articles list — uses CSS grid trick for smooth animation (no max-height snap)
     const articleList = document.createElement('div');
     articleList.className = 'nav-articles';
     articleList.id = `nav-articles-${sectionKey}`;
+    articleList.setAttribute('aria-label', label);
+
+    // Inner wrapper required for grid-template-rows: 0fr animation
+    const inner = document.createElement('div');
+    inner.className = 'nav-articles-inner';
 
     articles.forEach((article, idx) => {
       const link = document.createElement('a');
@@ -109,14 +115,16 @@ function renderSidebar(data: ContentData): void {
       link.dataset.section = sectionKey;
       link.dataset.index = String(idx);
       link.textContent = article.title;
+      link.title = article.title; // tooltip for ellipsized text
       link.addEventListener('click', (e) => {
         e.preventDefault();
         navigate(sectionKey, idx);
         closeMobileSidebar();
       });
-      articleList.appendChild(link);
+      inner.appendChild(link);
     });
 
+    articleList.appendChild(inner);
     section.appendChild(header);
     section.appendChild(articleList);
     nav.appendChild(section);
@@ -128,20 +136,17 @@ function renderSidebar(data: ContentData): void {
 function updateActiveStates(route: RouteState): void {
   const { section, index } = route;
 
-  // Update section headers
   qsa<HTMLButtonElement>('.nav-section-header').forEach((btn) => {
     const isActive = btn.dataset.section === section;
     btn.classList.toggle('section-active', isActive);
     btn.setAttribute('aria-expanded', String(isActive));
   });
 
-  // Expand/collapse article lists
   qsa<HTMLDivElement>('.nav-articles').forEach((list) => {
     const sectionKey = list.id.replace('nav-articles-', '');
     list.classList.toggle('expanded', sectionKey === section);
   });
 
-  // Update active article link
   qsa<HTMLAnchorElement>('.nav-article-link').forEach((link) => {
     const isActive = link.dataset.section === section && Number(link.dataset.index) === index;
     link.classList.toggle('active', isActive);
@@ -171,8 +176,18 @@ function renderArticle(route: RouteState): void {
   // Title
   el('article-title').textContent = article.title;
 
-  // Body
-  el('article-body').innerHTML = article.body;
+  // Body — rendered from {summary, example} fields
+  const body = el('article-body');
+  body.innerHTML = `
+    <div class="content-card summary-card">
+      <div class="card-label">Ringkasan</div>
+      <p class="summary-text">${article.summary}</p>
+    </div>
+    <div class="content-card example-card">
+      <div class="card-label">Contoh Nyata</div>
+      <div class="example-body">${article.example}</div>
+    </div>
+  `;
 
   // Prev / Next navigation
   renderArticleNavFooter(section, index);
@@ -182,12 +197,12 @@ function renderArticle(route: RouteState): void {
 
   const view = el('article-view');
   view.classList.remove('hidden');
-  // Trigger fade-in re-animation
+  // Trigger re-animation on every navigation
   view.style.animation = 'none';
-  void view.offsetWidth; // reflow
+  void view.offsetWidth; // force reflow
   view.style.animation = '';
 
-  // Scroll to top of content area
+  // Scroll content area to top on navigation
   el('content-main').scrollTo({ top: 0, behavior: 'instant' });
 }
 
@@ -202,16 +217,16 @@ function renderArticleNavFooter(section: SectionKey, index: number): void {
 
   if (currentFlat === -1) return;
 
-  // Previous
+  // Previous button
   if (currentFlat > 0) {
     const prev = allArticles[currentFlat - 1];
     const btn = document.createElement('a');
     btn.href = buildHash(prev.section, prev.index);
     btn.className = 'nav-btn prev';
     btn.innerHTML = `
-      <span>←</span>
-      <span>
-        <span class="nav-btn-label">Previous</span>
+      <span class="nav-btn-arrow">←</span>
+      <span class="nav-btn-content">
+        <span class="nav-btn-label">Sebelumnya</span>
         <span class="nav-btn-title">${prev.title}</span>
       </span>
     `;
@@ -221,23 +236,22 @@ function renderArticleNavFooter(section: SectionKey, index: number): void {
     });
     footer.appendChild(btn);
   } else {
-    // Spacer so Next stays on the right
     const spacer = document.createElement('div');
     footer.appendChild(spacer);
   }
 
-  // Next
+  // Next button
   if (currentFlat < allArticles.length - 1) {
     const next = allArticles[currentFlat + 1];
     const btn = document.createElement('a');
     btn.href = buildHash(next.section, next.index);
     btn.className = 'nav-btn next';
     btn.innerHTML = `
-      <span>
-        <span class="nav-btn-label">Next</span>
+      <span class="nav-btn-content">
+        <span class="nav-btn-label">Berikutnya</span>
         <span class="nav-btn-title">${next.title}</span>
       </span>
-      <span>→</span>
+      <span class="nav-btn-arrow">→</span>
     `;
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -290,8 +304,7 @@ function setupMobileMenu(): void {
 
   el('overlay').addEventListener('click', closeMobileSidebar);
 
-  // If the viewport crosses the mobile breakpoint while the sidebar is open,
-  // force-close it and restore body scroll so desktop is never stuck locked.
+  // Clear scroll-lock when viewport crosses the mobile breakpoint
   let lastWasMobile = window.innerWidth <= 768;
   window.addEventListener('resize', () => {
     const isMobile = window.innerWidth <= 768;
@@ -315,7 +328,6 @@ function handleRoute(): void {
 async function init(): Promise<void> {
   setupMobileMenu();
 
-  // Fetch content.json from the public folder (BASE_URL handles subdirectory)
   const baseUrl = import.meta.env.BASE_URL;
   const contentUrl = `${baseUrl}content.json`.replace('//', '/');
 
@@ -327,10 +339,10 @@ async function init(): Promise<void> {
   } catch (err) {
     const loading = el('loading-state');
     loading.innerHTML = `
-      <div style="color: var(--accent-red); font-size: 14px; text-align: center;">
-        <div style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
-        <strong>Failed to load content</strong><br>
-        <span style="color: var(--text-muted);">Could not fetch content.json. Please try refreshing.</span>
+      <div style="color: var(--accent-red); font-size: 14px; text-align: center; padding: 24px;">
+        <div style="font-size: 36px; margin-bottom: 12px;">⚠️</div>
+        <strong>Gagal memuat konten</strong><br>
+        <span style="color: var(--text-muted);">Tidak dapat mengambil content.json. Coba refresh halaman.</span>
       </div>
     `;
     console.error('Failed to load content.json:', err);
@@ -338,17 +350,11 @@ async function init(): Promise<void> {
   }
 
   contentData = data;
-
-  // Render navigation
   renderSidebar(data);
-
-  // Initial route
   handleRoute();
 
-  // Listen for hash changes (back/forward, link clicks)
   window.addEventListener('hashchange', handleRoute);
 
-  // If no hash, set a default so the URL is bookmarkable
   if (!window.location.hash) {
     window.history.replaceState(null, '', buildHash('phishing', 0));
   }
