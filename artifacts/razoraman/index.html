@@ -41,10 +41,15 @@
       </div>
     </header>
 
-    <!-- Mobile overlay -->
-    <div id="overlay" class="overlay"></div>
-
     <div class="layout">
+      <!-- Mobile overlay — inside .layout so it shares the same stacking
+           context as the sidebar. .layout has z-index:1 (its own context),
+           so #overlay at z-index:150 must live HERE for sidebar z-index:220
+           to correctly beat it. If overlay stays outside .layout, the whole
+           .layout (z-index:1) loses to overlay (z-index:150) and sidebar
+           clicks are swallowed before they reach the sidebar. -->
+      <div id="overlay" class="overlay"></div>
+
       <!-- Sidebar -->
       <aside id="sidebar" class="sidebar">
         <div class="sidebar-inner">
