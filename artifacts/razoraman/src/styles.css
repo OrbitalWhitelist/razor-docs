@@ -165,17 +165,14 @@ button {
   align-items: center;
   padding: 0 18px;
   gap: 12px;
-  /* z-index 190 — sidebar raises to 220 when open, staying clearly above */
-  z-index: 190;
+  /* z-index 230 — always above sidebar (220) and overlay (150); never blurred */
+  z-index: 230;
   overflow: hidden;
   transition: opacity var(--transition-fast);
 }
 
-/* Fade header out while sidebar is open — sidebar has its own logo/close btn */
-body.sidebar-open .mobile-header {
-  opacity: 0;
-  pointer-events: none;
-}
+/* Header stays fully visible when sidebar opens — z-index 230 keeps it above
+   sidebar (220) and overlay (150) so it always renders sharp and untouched */
 
 .hamburger-btn {
   width: 38px;
@@ -1217,17 +1214,22 @@ body.sidebar-open .mobile-header {
 
   .sidebar {
     position: fixed;
-    top: 0;
+    /* Start below the header so it never fights for header territory */
+    top: var(--mobile-header-height);
     left: 0;
-    height: 100%;
+    height: calc(100% - var(--mobile-header-height));
     /* 88 vw — wide enough to comfortably tap nav items, leaving a clear strip
        for the overlay "tap to dismiss" affordance */
     width: min(88vw, 340px);
-    /* z-index 220: above overlay (150) AND mobile-header (190).
-       This is the fix for taps being blocked by the header layer. */
+    /* z-index 220: above overlay (150), below mobile-header (230) */
     z-index: 220;
     transform: translateX(-110%);
     box-shadow: 8px 0 60px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Overlay only covers the content area — header stays crisp above it */
+  .overlay {
+    top: var(--mobile-header-height);
   }
 
   .sidebar.open {
