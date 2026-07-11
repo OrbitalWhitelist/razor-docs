@@ -10,7 +10,6 @@ interface Article {
 interface ContentData {
   phishing: Article[];
   security: Article[];
-  hacking: Article[];
 }
 
 type SectionKey = keyof ContentData;
@@ -32,19 +31,13 @@ const ICON_SECURITY = `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" str
   <polyline points="9 12 11 14 15 10"/>
 </svg>`;
 
-const ICON_HACKING = `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <polyline points="4 17 10 11 4 5"/>
-  <line x1="12" y1="19" x2="20" y2="19"/>
-</svg>`;
-
 const ICON_CHEVRON = `<svg class="nav-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <polyline points="6 9 12 15 18 9"/>
 </svg>`;
 
 const SECTIONS: Record<SectionKey, { label: string; iconSvg: string }> = {
-  phishing: { label: 'Phishing Awareness',           iconSvg: ICON_PHISHING },
-  security: { label: 'Account Security',             iconSvg: ICON_SECURITY },
-  hacking:  { label: 'Cara Peretas Hack Akun Mu',   iconSvg: ICON_HACKING  },
+  phishing: { label: 'Phishing Awareness', iconSvg: ICON_PHISHING },
+  security: { label: 'Account Security',  iconSvg: ICON_SECURITY  },
 };
 
 let contentData: ContentData | null = null;
@@ -309,10 +302,14 @@ function setupMobileMenu(): void {
     el('sidebar').classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
   });
 
-  // Overlay tap closes sidebar — guard with target check so events that
-  // bubble up from sidebar children never accidentally trigger this.
-  el('overlay').addEventListener('pointerdown', (e) => {
-    if (e.target === el('overlay')) closeMobileSidebar();
+  // Overlay tap — use 'click' (not 'pointerdown') to avoid conflicting with
+  // the browser's native left-edge swipe-back gesture on mobile.
+  // preventDefault + stopPropagation stop any default browser action and
+  // prevent the event reaching links/elements in the content layer below.
+  el('overlay').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeMobileSidebar();
   });
 
   // Clear scroll-lock on resize to desktop
