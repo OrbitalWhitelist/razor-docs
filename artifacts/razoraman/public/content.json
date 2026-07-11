@@ -2,15 +2,15 @@
   "phishing": [
     {
       "title": "Cara Cek Domain Aman",
-      "summary": "Domain resmi Roblox HANYA roblox.com polos — tanpa prefix, suffix, atau penggantian karakter apapun. Situs phishing sering meniru tampilan Private Server list, Profile User, atau halaman Group Roblox supaya makin meyakinkan. Latih matamu untuk selalu cek address bar sebelum ngetik apapun.",
-      "example": "<p class=\"example-intro\">Domain aman vs. berbahaya:</p><div class=\"domain-example domain-safe\"><span>roblox.com</span><span class=\"domain-badge\">Aman</span></div><div class=\"domain-example domain-safe\"><span>www.roblox.com</span><span class=\"domain-badge\">Aman</span></div><div class=\"domain-example domain-danger\"><span>roblox.com.bz</span><span class=\"domain-badge\">Bahaya — suffix setelah .com</span></div><div class=\"domain-example domain-danger\"><span>roblox.zm</span><span class=\"domain-badge\">Bahaya — TLD negara asing</span></div><div class=\"domain-example domain-danger\"><span>rob1ox.com</span><span class=\"domain-badge\">Bahaya — huruf diganti angka</span></div>"
+      "summary": "Domain resmi Roblox HANYA roblox.com polos — tanpa prefix, suffix, atau penggantian karakter apapun. Situs phishing sering meniru tampilan Private Server list, Profile User, atau halaman Group Roblox supaya makin meyakinkan. Utamakan literasi serta berhati-hati — selalu cek address bar sebelum mengetik apapun.",
+      "example": "<p class=\"example-intro\">Domain aman vs. berbahaya:</p><div class=\"domain-example domain-safe\"><span>roblox.com</span><span class=\"domain-badge\">AMAN</span></div><div class=\"domain-example domain-safe\"><span>www.roblox.com</span><span class=\"domain-badge\">AMAN</span></div><div class=\"domain-example domain-danger\"><span>roblox.com.bz</span><span class=\"domain-badge\">Bahaya — suffix setelah .com</span></div><div class=\"domain-example domain-danger\"><span>roblox.zm</span><span class=\"domain-badge\">Bahaya — TLD negara asing</span></div><div class=\"domain-example domain-danger\"><span>rob1ox.com</span><span class=\"domain-badge\">Bahaya — huruf diganti angka</span></div>"
     }
   ],
   "security": [
     {
       "title": "Keamanan Akun Sebelum Kena Hack",
-      "summary": "Pasang empat lapis pertahanan sekarang, sebelum terjadi apa-apa: email Gmail terverifikasi, 2FA lewat Google Authenticator atau Passkey, nomor HP, dan Account PIN di Parental Control. Hacker bekerja dalam hitungan detik setelah masuk, jadi pencegahan adalah satu-satunya strategi efektif.",
-      "example": "<ul class=\"checklist\"><li class=\"check-ok\"><span>Email Gmail terverifikasi terhubung ke akun</span></li><li class=\"check-ok\"><span>2FA aktif (Google Authenticator atau Passkey)</span></li><li class=\"check-ok\"><span>Nomor HP terverifikasi</span></li><li class=\"check-ok\"><span>Account PIN aktif di Parental Control</span></li><li class=\"check-ok\"><span>Password unik, tidak dipakai di situs lain</span></li></ul>"
+      "summary": "Pasang empat lapis pertahanan sekarang, sebelum terjadi apa-apa: email Gmail terverifikasi, 2FA lewat Google Authenticator atau Passkey, nomor HP, dan aktifkan Parental Control untuk memantau aktivitas akun serta mengunci fitur-fitur tertentu agar tidak bisa diubah tanpa izin. Hacker bekerja dalam hitungan detik setelah masuk, jadi pencegahan adalah satu-satunya strategi efektif.",
+      "example": "<ul class=\"checklist\"><li class=\"check-ok\"><span>Email Gmail terverifikasi terhubung ke akun</span></li><li class=\"check-ok\"><span>2FA aktif (Google Authenticator atau Passkey)</span></li><li class=\"check-ok\"><span>Nomor HP terverifikasi</span></li><li class=\"check-ok\"><span>Parental Control aktif — pantau aktivitas &amp; kunci fitur sensitif</span></li><li class=\"check-ok\"><span>Password unik, tidak dipakai di situs lain</span></li></ul>"
     }
   ]
 }

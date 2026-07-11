@@ -85,6 +85,8 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   height: 100%;
+  /* overflow:hidden scopes desktop scrolling inside .content;
+     mobile @media (≤768) overrides to overflow-y:auto for natural page scroll. */
   overflow: hidden;
 }
 
@@ -933,10 +935,17 @@ button {
   border-color: var(--border-default);
 }
 
+/* Lucide "check" icon as data URI — no emoji, crisp on all screens */
 .checklist li.check-ok::before {
-  content: '✅';
+  content: '';
+  display: inline-block;
   flex-shrink: 0;
-  font-size: 15px;
+  width: 18px;
+  height: 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .checklist li > span {
@@ -1115,9 +1124,12 @@ button {
     top: 0;
     left: 0;
     height: 100vh;
-    z-index: 160;
+    /* 88 vw — wide enough to comfortably tap nav items, leaving just a sliver
+       of the content as a visual "tap to dismiss" affordance */
+    width: min(88vw, 340px);
+    z-index: 160;   /* above overlay (150) and mobile-header (200 excluded — header hidden on open) */
     transform: translateX(-100%);
-    box-shadow: var(--shadow-sidebar);
+    box-shadow: 8px 0 60px rgba(0, 0, 0, 0.75);
   }
 
   .sidebar.open {

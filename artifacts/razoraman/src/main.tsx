@@ -19,21 +19,20 @@ interface RouteState {
   index: number;
 }
 
-// SVG icons — no emojis
-const ICON_PHISHING = `<svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M10 3v5.5"/>
-  <circle cx="10" cy="11" r="2.5"/>
-  <path d="M12.5 11c0 2.8 1.5 4.5 3 4.5"/>
-  <path d="M6 6.5C6 4.5 7.8 2.5 10 2.5"/>
+// Lucide icons (MIT licensed, 24×24 stroke-based)
+const ICON_PHISHING = `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+  <line x1="12" y1="9" x2="12" y2="13"/>
+  <line x1="12" y1="17" x2="12.01" y2="17"/>
 </svg>`;
 
-const ICON_SECURITY = `<svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M10 2l6 3v4.5c0 3.5-2.5 6.5-6 8-3.5-1.5-6-4.5-6-8V5l6-3z"/>
-  <path d="M7.5 10l2 2 3-3"/>
+const ICON_SECURITY = `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  <polyline points="9 12 11 14 15 10"/>
 </svg>`;
 
-const ICON_CHEVRON = `<svg class="nav-chevron-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M4 6l4 4 4-4"/>
+const ICON_CHEVRON = `<svg class="nav-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <polyline points="6 9 12 15 18 9"/>
 </svg>`;
 
 const SECTIONS: Record<SectionKey, { label: string; iconSvg: string }> = {
@@ -102,8 +101,11 @@ function renderSidebar(data: ContentData): void {
     `;
     header.addEventListener('click', () => {
       if (!contentData) return;
+      // Navigate to first article in section but keep sidebar OPEN
+      // so the user can browse article links without reopening.
+      // Sidebar closes only when an article link is tapped, or via the
+      // X button / overlay tap.
       navigate(sectionKey, 0);
-      closeMobileSidebar();
     });
 
     // CSS grid trick — smooth accordion without max-height snap
@@ -266,12 +268,20 @@ function closeMobileSidebar(): void {
 
   sidebar.classList.remove('open');
   overlay.classList.remove('visible');
-  document.body.style.overflow = '';
+  // Restore natural body scroll (not 'hidden' — let the mobile @media rule govern)
+  document.body.style.removeProperty('overflow');
 
-  // Hide overlay from DOM after fade-out completes — eliminates backdrop-filter bleed
-  overlay.addEventListener('transitionend', () => {
+  // Hide overlay from DOM after fade-out — eliminates stacking context bleed.
+  // Fallback timeout ensures display:none even if transitionend never fires
+  // (e.g. overlay was never made visible, or transition was interrupted).
+  let settled = false;
+  const hide = () => {
+    if (settled) return;
+    settled = true;
     overlay.style.display = 'none';
-  }, { once: true });
+  };
+  overlay.addEventListener('transitionend', hide, { once: true });
+  setTimeout(hide, 420); // slightly longer than the 300ms transition
 }
 
 function setupMobileMenu(): void {
@@ -319,7 +329,10 @@ async function init(): Promise<void> {
   } catch (err) {
     el('loading-state').innerHTML = `
       <div style="text-align:center;padding:32px;color:var(--accent-red)">
-        <div style="font-size:36px;margin-bottom:12px">⚠️</div>
+        <svg style="width:40px;height:40px;margin-bottom:12px;stroke:var(--accent-red)" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
         <strong>Gagal memuat konten</strong><br>
         <span style="color:var(--text-muted)">Coba refresh halaman.</span>
       </div>`;
