@@ -10,6 +10,7 @@ interface Article {
 interface ContentData {
   phishing: Article[];
   security: Article[];
+  hacking: Article[];
 }
 
 type SectionKey = keyof ContentData;
@@ -31,13 +32,19 @@ const ICON_SECURITY = `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" str
   <polyline points="9 12 11 14 15 10"/>
 </svg>`;
 
+const ICON_HACKING = `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <polyline points="4 17 10 11 4 5"/>
+  <line x1="12" y1="19" x2="20" y2="19"/>
+</svg>`;
+
 const ICON_CHEVRON = `<svg class="nav-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <polyline points="6 9 12 15 18 9"/>
 </svg>`;
 
 const SECTIONS: Record<SectionKey, { label: string; iconSvg: string }> = {
-  phishing: { label: 'Phishing Awareness', iconSvg: ICON_PHISHING },
-  security: { label: 'Account Security',   iconSvg: ICON_SECURITY },
+  phishing: { label: 'Phishing Awareness',           iconSvg: ICON_PHISHING },
+  security: { label: 'Account Security',             iconSvg: ICON_SECURITY },
+  hacking:  { label: 'Cara Peretas Hack Akun Mu',   iconSvg: ICON_HACKING  },
 };
 
 let contentData: ContentData | null = null;
@@ -250,10 +257,10 @@ function openMobileSidebar(): void {
   const overlay = el('overlay');
   const sidebar = el('sidebar');
 
-  // 1. Make overlay visible in DOM first (starts at opacity:0)
   overlay.style.display = 'block';
+  // Add class so CSS can push mobile-header behind sidebar
+  document.body.classList.add('sidebar-open');
 
-  // 2. Two rAF frames so the browser registers the display change before transitioning
   requestAnimationFrame(() => requestAnimationFrame(() => {
     sidebar.classList.add('open');
     overlay.classList.add('visible');
@@ -268,6 +275,7 @@ function closeMobileSidebar(): void {
 
   sidebar.classList.remove('open');
   overlay.classList.remove('visible');
+  document.body.classList.remove('sidebar-open');
   // Restore natural body scroll (not 'hidden' — let the mobile @media rule govern)
   document.body.style.removeProperty('overflow');
 

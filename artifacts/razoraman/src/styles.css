@@ -42,7 +42,7 @@
   --mobile-header-height: 60px;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Border radius */
@@ -51,11 +51,11 @@
   --radius-lg: 18px;
   --radius-xl: 24px;
 
-  /* Transitions — all use smooth cubic-bezier */
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Transitions — spring-style (fast out, soft land) */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 460ms cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Shadows */
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
@@ -158,15 +158,23 @@ button {
   left: 0;
   right: 0;
   height: var(--mobile-header-height);
-  background: rgba(10, 10, 15, 0.85);
+  background: rgba(10, 10, 15, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-subtle);
   align-items: center;
   padding: 0 18px;
   gap: 12px;
-  z-index: 200;
+  /* z-index 190 — sidebar raises to 220 when open, staying clearly above */
+  z-index: 190;
   overflow: hidden;
+  transition: opacity var(--transition-fast);
+}
+
+/* Fade header out while sidebar is open — sidebar has its own logo/close btn */
+body.sidebar-open .mobile-header {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .hamburger-btn {
@@ -602,7 +610,7 @@ button {
    Article View
    =========================== */
 .article-view {
-  animation: fadeSlideIn var(--transition-base) var(--ease) both;
+  animation: fadeSlideIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .article-view.hidden {
@@ -612,12 +620,24 @@ button {
 @keyframes fadeSlideIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(14px);
+    filter: blur(3px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+    filter: blur(0);
   }
+}
+
+/* Staggered card entrance */
+.content-card:nth-child(1) { animation: cardPop 380ms 60ms  cubic-bezier(0.16, 1, 0.3, 1) both; }
+.content-card:nth-child(2) { animation: cardPop 380ms 140ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.content-card:nth-child(3) { animation: cardPop 380ms 200ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes cardPop {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
 }
 
 .article-breadcrumb {
@@ -654,11 +674,14 @@ button {
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.25;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   margin-bottom: 28px;
   padding-bottom: 22px;
   border-bottom: 1px solid var(--border-subtle);
-  overflow: hidden;
+  /* never clip long Indonesian titles — allow wrapping */
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 /* ===========================
@@ -668,7 +691,8 @@ button {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow: hidden;
+  /* visible so long content is never clipped */
+  overflow: visible;
 }
 
 .content-card {
@@ -722,16 +746,16 @@ button {
   font-size: 14px;
   line-height: 1.7;
   color: var(--text-primary);
-  overflow: hidden;
+  overflow: visible;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .example-intro {
   font-size: 13px;
   color: var(--text-secondary);
   margin-bottom: 12px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
 }
 
 /* ===========================
@@ -901,6 +925,85 @@ button {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* ===========================
+   Attack Flow (Hacking tab)
+   =========================== */
+.attack-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.flow-step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-base), background var(--transition-base),
+              transform var(--transition-base);
+  overflow: visible;
+}
+
+.flow-step:hover {
+  border-color: var(--border-default);
+  background: rgba(255, 255, 255, 0.055);
+  transform: translateX(3px);
+}
+
+.flow-step--danger {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: var(--accent-red-subtle);
+}
+
+.flow-step--danger:hover {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.flow-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent-purple);
+  background: var(--accent-purple-subtle);
+  border: 1px solid var(--accent-purple-glow);
+  border-radius: 6px;
+  padding: 3px 7px;
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
+  margin-top: 1px;
+}
+
+.flow-step--danger .flow-num {
+  color: var(--accent-red);
+  background: var(--accent-red-subtle);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.flow-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.flow-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+  overflow-wrap: break-word;
+}
+
+.flow-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ===========================
@@ -1123,13 +1226,15 @@ button {
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
-    /* 88 vw — wide enough to comfortably tap nav items, leaving just a sliver
-       of the content as a visual "tap to dismiss" affordance */
+    height: 100%;
+    /* 88 vw — wide enough to comfortably tap nav items, leaving a clear strip
+       for the overlay "tap to dismiss" affordance */
     width: min(88vw, 340px);
-    z-index: 160;   /* above overlay (150) and mobile-header (200 excluded — header hidden on open) */
-    transform: translateX(-100%);
-    box-shadow: 8px 0 60px rgba(0, 0, 0, 0.75);
+    /* z-index 220: above overlay (150) AND mobile-header (190).
+       This is the fix for taps being blocked by the header layer. */
+    z-index: 220;
+    transform: translateX(-110%);
+    box-shadow: 8px 0 60px rgba(0, 0, 0, 0.8);
   }
 
   .sidebar.open {
