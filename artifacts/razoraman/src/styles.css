@@ -224,20 +224,22 @@ body.sidebar-open .mobile-header {
    Overlay
    =========================== */
 .overlay {
-  /* display controlled entirely by JS — never set display:block in CSS.
-     backdrop-filter is intentionally omitted: even at opacity:0 it creates
-     a rendering layer that darkens the screen on mobile browsers. */
+  /* display controlled by JS only — never set display:block in CSS.
+     pointer-events:none is CRITICAL: prevents the invisible overlay from
+     eating taps during opacity transitions (the most common mobile bug). */
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   z-index: 150;
   opacity: 0;
-  transition: opacity var(--transition-base);
+  pointer-events: none;          /* ← never block when not fully visible */
+  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .overlay.visible {
   opacity: 1;
+  pointer-events: auto;          /* ← only accept taps when actually shown */
 }
 
 /* ===========================

@@ -257,16 +257,23 @@ function openMobileSidebar(): void {
   const overlay = el('overlay');
   const sidebar = el('sidebar');
 
+  // Ensure pointer-events:none while opacity is still 0 — the CSS rule handles
+  // this globally, but we defensively set it inline here too so no browser
+  // quirk can override it during the display:none → display:block transition.
+  overlay.style.pointerEvents = 'none';
   overlay.style.display = 'block';
-  // Add class so CSS can push mobile-header behind sidebar
   document.body.classList.add('sidebar-open');
+  document.body.style.overflow = 'hidden';
 
+  // Two rAF frames so the browser has painted display:block before we
+  // start the opacity transition. pointer-events flips to 'auto' the moment
+  // .visible is added (via the CSS rule above), not before.
   requestAnimationFrame(() => requestAnimationFrame(() => {
     sidebar.classList.add('open');
     overlay.classList.add('visible');
+    // Remove inline override — the CSS .overlay.visible rule takes over
+    overlay.style.removeProperty('pointer-events');
   }));
-
-  document.body.style.overflow = 'hidden';
 }
 
 function closeMobileSidebar(): void {
@@ -275,21 +282,22 @@ function closeMobileSidebar(): void {
 
   sidebar.classList.remove('open');
   overlay.classList.remove('visible');
+  // pointer-events falls back to 'none' (CSS default) the instant .visible
+  // is removed — so clicks are unblocked immediately, even mid-fade-out.
   document.body.classList.remove('sidebar-open');
-  // Restore natural body scroll (not 'hidden' — let the mobile @media rule govern)
   document.body.style.removeProperty('overflow');
 
-  // Hide overlay from DOM after fade-out — eliminates stacking context bleed.
-  // Fallback timeout ensures display:none even if transitionend never fires
-  // (e.g. overlay was never made visible, or transition was interrupted).
+  // Remove from DOM after fade-out — prevents stacking context bleed.
+  // Fallback timeout covers cases where transitionend never fires.
   let settled = false;
   const hide = () => {
     if (settled) return;
     settled = true;
     overlay.style.display = 'none';
+    overlay.style.removeProperty('pointer-events'); // clean up any inline override
   };
   overlay.addEventListener('transitionend', hide, { once: true });
-  setTimeout(hide, 420); // slightly longer than the 300ms transition
+  setTimeout(hide, 400);
 }
 
 function setupMobileMenu(): void {
@@ -301,8 +309,11 @@ function setupMobileMenu(): void {
     el('sidebar').classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
   });
 
-  // Use pointerdown for snappier response on mobile
-  el('overlay').addEventListener('pointerdown', closeMobileSidebar);
+  // Overlay tap closes sidebar — guard with target check so events that
+  // bubble up from sidebar children never accidentally trigger this.
+  el('overlay').addEventListener('pointerdown', (e) => {
+    if (e.target === el('overlay')) closeMobileSidebar();
+  });
 
   // Clear scroll-lock on resize to desktop
   let wasMobile = window.innerWidth <= 768;
