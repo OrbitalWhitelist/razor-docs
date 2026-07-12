@@ -1,0 +1,5 @@
+{
+  "buildCommand": "pnpm install && pnpm --filter @workspace/razoraman run build",
+  "outputDirectory": "artifacts/razoraman/dist/public",
+  "installCommand": "pnpm install"
+}
