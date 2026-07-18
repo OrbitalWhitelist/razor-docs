@@ -1,6 +1,3 @@
-// Razor Docs — Vanilla TypeScript docs app
-// No framework. All content driven by /public/content.json.
-
 interface Article {
   title: string;
   summary: string;
@@ -19,7 +16,6 @@ interface RouteState {
   index: number;
 }
 
-// Lucide icons (MIT licensed, 24×24 stroke-based)
 const ICON_PHISHING = `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
   <line x1="12" y1="9" x2="12" y2="13"/>
@@ -37,12 +33,13 @@ const ICON_CHEVRON = `<svg class="nav-chevron-icon" viewBox="0 0 24 24" fill="no
 
 const SECTIONS: Record<SectionKey, { label: string; iconSvg: string }> = {
   phishing: { label: 'Phishing Awareness', iconSvg: ICON_PHISHING },
-  security: { label: 'Account Security',  iconSvg: ICON_SECURITY  },
+  security: { label: 'Account Security', iconSvg: ICON_SECURITY },
 };
 
-let contentData: ContentData | null = null;
+const MOBILE_BREAKPOINT = 768;
+const SIDEBAR_CLOSE_FALLBACK_MS = 400;
 
-// ─── DOM helpers ─────────────────────────────────────────────────────────────
+let contentData: ContentData | null = null;
 
 function el<T extends HTMLElement>(id: string): T {
   const e = document.getElementById(id);
@@ -54,17 +51,27 @@ function qsa<T extends Element>(sel: string, root: Element | Document = document
   return Array.from(root.querySelectorAll<T>(sel));
 }
 
-// ─── Hash routing ─────────────────────────────────────────────────────────────
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(value, max));
+}
+
+function isSectionKey(value: string): value is SectionKey {
+  return value === 'phishing' || value === 'security';
+}
 
 function parseHash(): RouteState {
   const hash = window.location.hash.slice(1);
-  if (!hash) return { section: 'phishing', index: 0 };
+  if (!hash || !contentData) return { section: 'phishing', index: 0 };
+
   const [sectionRaw, indexRaw] = hash.split('-');
-  const section = sectionRaw as SectionKey;
-  const index   = parseInt(indexRaw ?? '0', 10);
-  if (!contentData || !(section in contentData)) return { section: 'phishing', index: 0 };
-  const safeIdx = Number.isNaN(index) ? 0 : Math.max(0, Math.min(index, contentData[section].length - 1));
-  return { section, index: safeIdx };
+  if (!isSectionKey(sectionRaw)) return { section: 'phishing', index: 0 };
+
+  const articles = contentData[sectionRaw];
+  if (!articles.length) return { section: sectionRaw, index: 0 };
+
+  const parsedIndex = parseInt(indexRaw ?? '0', 10);
+  const safeIndex = Number.isNaN(parsedIndex) ? 0 : clamp(parsedIndex, 0, articles.length - 1);
+  return { section: sectionRaw, index: safeIndex };
 }
 
 function buildHash(section: SectionKey, index: number): string {
@@ -74,8 +81,6 @@ function buildHash(section: SectionKey, index: number): string {
 function navigate(section: SectionKey, index: number): void {
   window.location.hash = buildHash(section, index);
 }
-
-// ─── Sidebar rendering ────────────────────────────────────────────────────────
 
 function renderSidebar(data: ContentData): void {
   const nav = el('sidebar-nav');
@@ -93,6 +98,7 @@ function renderSidebar(data: ContentData): void {
     header.className = 'nav-section-header';
     header.dataset.section = sectionKey;
     header.setAttribute('aria-expanded', 'false');
+    header.setAttribute('aria-label', `${label} section`);
     header.style.animationDelay = `${sectionIdx * 60}ms`;
     header.innerHTML = `
       <span class="nav-icon-wrap">${iconSvg}</span>
@@ -100,15 +106,10 @@ function renderSidebar(data: ContentData): void {
       ${ICON_CHEVRON}
     `;
     header.addEventListener('click', () => {
-      if (!contentData) return;
-      // Navigate to first article in section but keep sidebar OPEN
-      // so the user can browse article links without reopening.
-      // Sidebar closes only when an article link is tapped, or via the
-      // X button / overlay tap.
+      if (!contentData || !articles.length) return;
       navigate(sectionKey, 0);
     });
 
-    // CSS grid trick — smooth accordion without max-height snap
     const articleList = document.createElement('div');
     articleList.className = 'nav-articles';
     articleList.id = `nav-articles-${sectionKey}`;
@@ -118,12 +119,12 @@ function renderSidebar(data: ContentData): void {
 
     articles.forEach((article, idx) => {
       const link = document.createElement('a');
-      link.href     = buildHash(sectionKey, idx);
+      link.href = buildHash(sectionKey, idx);
       link.className = 'nav-article-link';
       link.dataset.section = sectionKey;
-      link.dataset.index   = String(idx);
-      link.textContent     = article.title;
-      link.title           = article.title;
+      link.dataset.index = String(idx);
+      link.textContent = article.title;
+      link.title = article.title;
       link.addEventListener('click', (e) => {
         e.preventDefault();
         navigate(sectionKey, idx);
@@ -139,8 +140,6 @@ function renderSidebar(data: ContentData): void {
   });
 }
 
-// ─── Active state ─────────────────────────────────────────────────────────────
-
 function updateActiveStates(route: RouteState): void {
   const { section, index } = route;
 
@@ -155,12 +154,12 @@ function updateActiveStates(route: RouteState): void {
   });
 
   qsa<HTMLAnchorElement>('.nav-article-link').forEach((link) => {
-    link.classList.toggle('active',
-      link.dataset.section === section && Number(link.dataset.index) === index);
+    link.classList.toggle(
+      'active',
+      link.dataset.section === section && Number(link.dataset.index) === index,
+    );
   });
 }
-
-// ─── Article rendering ────────────────────────────────────────────────────────
 
 function renderArticle(route: RouteState): void {
   if (!contentData) return;
@@ -203,14 +202,42 @@ function renderArticle(route: RouteState): void {
   el('content-main').scrollTo({ top: 0, behavior: 'instant' });
 }
 
-interface FlatArticle { section: SectionKey; index: number; title: string; }
+interface FlatArticle {
+  section: SectionKey;
+  index: number;
+  title: string;
+}
 
 function getAllFlat(): FlatArticle[] {
   if (!contentData) return [];
   const out: FlatArticle[] = [];
   (Object.keys(SECTIONS) as SectionKey[]).forEach((k) =>
-    contentData![k].forEach((a, i) => out.push({ section: k, index: i, title: a.title })));
+    contentData![k].forEach((a, i) => out.push({ section: k, index: i, title: a.title })),
+  );
   return out;
+}
+
+function buildNavButton(
+  entry: FlatArticle,
+  variant: 'prev' | 'next',
+): HTMLAnchorElement {
+  const btn = document.createElement('a');
+  btn.href = buildHash(entry.section, entry.index);
+  btn.className = `nav-btn ${variant}`;
+
+  const arrow = variant === 'prev' ? '←' : '→';
+  const label = variant === 'prev' ? 'Sebelumnya' : 'Berikutnya';
+  const content = `<span class="nav-btn-content"><span class="nav-btn-label">${label}</span><span class="nav-btn-title">${entry.title}</span></span>`;
+
+  btn.innerHTML = variant === 'prev'
+    ? `<span class="nav-btn-arrow">${arrow}</span>${content}`
+    : `${content}<span class="nav-btn-arrow">${arrow}</span>`;
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    navigate(entry.section, entry.index);
+  });
+  return btn;
 }
 
 function renderNavFooter(section: SectionKey, index: number): void {
@@ -222,51 +249,32 @@ function renderNavFooter(section: SectionKey, index: number): void {
   if (cur === -1) return;
 
   if (cur > 0) {
-    const prev = all[cur - 1];
-    const btn  = document.createElement('a');
-    btn.href      = buildHash(prev.section, prev.index);
-    btn.className = 'nav-btn prev';
-    btn.innerHTML = `<span class="nav-btn-arrow">←</span><span class="nav-btn-content"><span class="nav-btn-label">Sebelumnya</span><span class="nav-btn-title">${prev.title}</span></span>`;
-    btn.addEventListener('click', (e) => { e.preventDefault(); navigate(prev.section, prev.index); });
-    footer.appendChild(btn);
+    footer.appendChild(buildNavButton(all[cur - 1], 'prev'));
   } else {
     footer.appendChild(document.createElement('div'));
   }
 
   if (cur < all.length - 1) {
-    const next = all[cur + 1];
-    const btn  = document.createElement('a');
-    btn.href      = buildHash(next.section, next.index);
-    btn.className = 'nav-btn next';
-    btn.innerHTML = `<span class="nav-btn-content"><span class="nav-btn-label">Berikutnya</span><span class="nav-btn-title">${next.title}</span></span><span class="nav-btn-arrow">→</span>`;
-    btn.addEventListener('click', (e) => { e.preventDefault(); navigate(next.section, next.index); });
-    footer.appendChild(btn);
+    footer.appendChild(buildNavButton(all[cur + 1], 'next'));
   }
 }
-
-// ─── Mobile sidebar — overlay controlled by JS only ──────────────────────────
 
 function openMobileSidebar(): void {
   const overlay = el('overlay');
   const sidebar = el('sidebar');
 
-  // Ensure pointer-events:none while opacity is still 0 — the CSS rule handles
-  // this globally, but we defensively set it inline here too so no browser
-  // quirk can override it during the display:none → display:block transition.
   overlay.style.pointerEvents = 'none';
   overlay.style.display = 'block';
   document.body.classList.add('sidebar-open');
   document.body.style.overflow = 'hidden';
 
-  // Two rAF frames so the browser has painted display:block before we
-  // start the opacity transition. pointer-events flips to 'auto' the moment
-  // .visible is added (via the CSS rule above), not before.
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    sidebar.classList.add('open');
-    overlay.classList.add('visible');
-    // Remove inline override — the CSS .overlay.visible rule takes over
-    overlay.style.removeProperty('pointer-events');
-  }));
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      sidebar.classList.add('open');
+      overlay.classList.add('visible');
+      overlay.style.removeProperty('pointer-events');
+    }),
+  );
 }
 
 function closeMobileSidebar(): void {
@@ -275,53 +283,41 @@ function closeMobileSidebar(): void {
 
   sidebar.classList.remove('open');
   overlay.classList.remove('visible');
-  // pointer-events falls back to 'none' (CSS default) the instant .visible
-  // is removed — so clicks are unblocked immediately, even mid-fade-out.
   document.body.classList.remove('sidebar-open');
   document.body.style.removeProperty('overflow');
 
-  // Remove from DOM after fade-out — prevents stacking context bleed.
-  // Fallback timeout covers cases where transitionend never fires.
   let settled = false;
   const hide = () => {
     if (settled) return;
     settled = true;
     overlay.style.display = 'none';
-    overlay.style.removeProperty('pointer-events'); // clean up any inline override
+    overlay.style.removeProperty('pointer-events');
   };
   overlay.addEventListener('transitionend', hide, { once: true });
-  setTimeout(hide, 400);
+  setTimeout(hide, SIDEBAR_CLOSE_FALLBACK_MS);
 }
 
 function setupMobileMenu(): void {
-  // Close button inside sidebar
   const closeBtn = document.getElementById('sidebar-close');
-  if (closeBtn) closeBtn.addEventListener('click', closeMobileSidebar);
+  closeBtn?.addEventListener('click', closeMobileSidebar);
 
   el('hamburger').addEventListener('click', () => {
     el('sidebar').classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
   });
 
-  // Overlay tap — use 'click' (not 'pointerdown') to avoid conflicting with
-  // the browser's native left-edge swipe-back gesture on mobile.
-  // preventDefault + stopPropagation stop any default browser action and
-  // prevent the event reaching links/elements in the content layer below.
   el('overlay').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     closeMobileSidebar();
   });
 
-  // Clear scroll-lock on resize to desktop
-  let wasMobile = window.innerWidth <= 768;
+  let wasMobile = window.innerWidth <= MOBILE_BREAKPOINT;
   window.addEventListener('resize', () => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
     if (wasMobile && !isMobile) closeMobileSidebar();
     wasMobile = isMobile;
   });
 }
-
-// ─── Router ───────────────────────────────────────────────────────────────────
 
 function handleRoute(): void {
   const route = parseHash();
@@ -329,32 +325,38 @@ function handleRoute(): void {
   renderArticle(route);
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+function renderLoadError(err: unknown): void {
+  el('loading-state').innerHTML = `
+    <div style="text-align:center;padding:32px;color:var(--accent-red)">
+      <svg style="width:40px;height:40px;margin-bottom:12px;stroke:var(--accent-red)" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <strong>Gagal memuat konten</strong><br>
+      <span style="color:var(--text-muted)">Coba refresh halaman.</span>
+    </div>`;
+  console.error('content.json load error:', err);
+}
+
+async function loadContent(): Promise<ContentData | null> {
+  const base = import.meta.env.BASE_URL;
+  const url = `${base}content.json`.replace('//', '/');
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as ContentData;
+  } catch (err) {
+    renderLoadError(err);
+    return null;
+  }
+}
 
 async function init(): Promise<void> {
   setupMobileMenu();
 
-  const base = import.meta.env.BASE_URL;
-  const url  = `${base}content.json`.replace('//', '/');
-
-  let data: ContentData;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    data = await res.json() as ContentData;
-  } catch (err) {
-    el('loading-state').innerHTML = `
-      <div style="text-align:center;padding:32px;color:var(--accent-red)">
-        <svg style="width:40px;height:40px;margin-bottom:12px;stroke:var(--accent-red)" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-        <strong>Gagal memuat konten</strong><br>
-        <span style="color:var(--text-muted)">Coba refresh halaman.</span>
-      </div>`;
-    console.error('content.json load error:', err);
-    return;
-  }
+  const data = await loadContent();
+  if (!data) return;
 
   contentData = data;
   renderSidebar(data);
